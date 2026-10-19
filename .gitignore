@@ -1,0 +1,12 @@
+bin/
+obj/
+publish/
+Tests/bin/
+Tests/obj/
+AssetReader/build/
+AssetReader/dist/
+AssetReader/*.spec
+PortableTests/artifacts*/
+Tests/artwork-cache/
+**/__pycache__/
+*.pyc

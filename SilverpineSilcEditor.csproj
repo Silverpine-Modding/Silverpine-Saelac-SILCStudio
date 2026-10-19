@@ -1,0 +1,26 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>SilverpineSilcEditor</AssemblyName>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <Version>0.2.1</Version>
+    <PublishTrimmed>false</PublishTrimmed>
+    <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
+    <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.12" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.12" />
+    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.12" />
+    <PackageReference Include="Tmds.DBus.Protocol" Version="0.21.3" />
+    <Compile Include="Core/*.cs" Exclude="Core/GameArtwork.cs" />
+    <Compile Include="Desktop/*.cs" />
+    <EmbeddedResource Include="Assets/PortraitGuides/*.png" LogicalName="Guides.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="AssetReader/dist/SilverpineAssetReader.exe" LogicalName="AssetReader.windows" Condition="Exists('AssetReader/dist/SilverpineAssetReader.exe') And ('$(RuntimeIdentifier)' == '' Or $([System.String]::Copy('$(RuntimeIdentifier)').StartsWith('win-')))" />
+    <EmbeddedResource Include="AssetReader/read_assets.py" LogicalName="AssetReader.python" />
+    <None Remove="AssetReader/build/**;AssetReader/dist/**;Tests/**;PortableTests/**;LegacyWinForms/**;publish/**" />
+  </ItemGroup>
+</Project>

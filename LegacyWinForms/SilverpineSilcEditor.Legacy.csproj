@@ -1,0 +1,18 @@
+<!-- Archived Windows-only interface retained for regression comparison. New builds use ../SilverpineSilcEditor.csproj. -->
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net9.0-windows</TargetFramework>
+    <UseWindowsForms>true</UseWindowsForms>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <AssemblyName>SilverpineSilcEditor.Legacy</AssemblyName>
+    <RootNamespace>SilverpineSilcEditor</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../Core/*.cs;../UI/*.cs;../Program.cs;../Properties/*.cs" />
+    <EmbeddedResource Include="../Assets/PortraitGuides/*.png" LogicalName="SilverpineSilcEditor.Assets.PortraitGuides.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../AssetReader/dist/SilverpineAssetReader.exe" LogicalName="SilverpineSilcEditor.AssetReader.exe" Condition="Exists('../AssetReader/dist/SilverpineAssetReader.exe')" />
+  </ItemGroup>
+</Project>
