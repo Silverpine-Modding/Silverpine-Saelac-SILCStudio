@@ -28,14 +28,16 @@ internal sealed class EditorWindow : Window
     private DefinitionView? _view;
     private byte[]? _diskHash;
     private bool _dirty, _busy, _restoring, _closeApproved;
+    internal Func<IReadOnlyList<GameEditorWarning>, bool, Task<bool>> ConfirmSaveWarnings { get; set; }
     internal EditorWindow(string? initialPath = null)
     {
+        ConfirmSaveWarnings = (warnings, backup) => Ui.ConfirmSaveWarnings(this, warnings, backup);
         Title = "Silverpine · SILC Studio"; Width = 1450; Height = 920; MinWidth = 1060; MinHeight = 660;
         Background = Ui.Background; FontSize = 14; Ui.CurrentWindow = this;
         _save = Ui.AsyncButton("Save changes", SaveClick, true); _save.IsEnabled = false;
         _backup.IsChecked = EditorPaths.Read("automatic-backup") != "false";
         _backup.IsCheckedChanged += (_, _) => { try { EditorPaths.Write("automatic-backup", _backup.IsChecked == true ? "true" : "false"); } catch (Exception e) { _status.Text = e.Message; } };
-        var top = Ui.Card(Ui.Dock(Ui.Row(Ui.Text("SILVERPINE / SILC STUDIO", 20, Ui.Accent), Ui.Note("Native desktop · 0.2.1")),
+        var top = Ui.Card(Ui.Dock(Ui.Row(Ui.Text("SILVERPINE / SILC STUDIO", 20, Ui.Accent), Ui.Note("Native desktop · 0.2.2")),
             Ui.Row(Ui.AsyncButton("Definitions folder…", PickDefinitions), Ui.AsyncButton("Game folder…", PickGame), Ui.AsyncButton("Back up all SILCs", BackupAll), _backup)), 16);
         _folderLabel.TextTrimming = TextTrimming.CharacterEllipsis; _folderLabel.MaxLines = 1;
         var sidebarHead = Ui.Stack(Ui.Text("LIBRARY", 13, Ui.Accent), _search, _filter, _count); sidebarHead.Margin = new Thickness(12, 18);
@@ -128,15 +130,28 @@ internal sealed class EditorWindow : Window
     }
     private void MarkDirty() { _dirty = true; UpdateHeader(); }
     private void UpdateHeader() { _title.Text = (_dirty ? "● " : "") + _document?.Name; _meta.Text = $"{(_dirty ? "Unsaved changes" : "Saved on disk")} · {_document?.Kind} · {_document?.Version}"; }
-    private async Task<bool> Save()
+    internal async Task<bool> Save()
     {
         if (_busy || _document is null || _view is null) return false;
         _busy = true; _host.IsEnabled = false; _library.IsEnabled = false; _save.IsEnabled = false;
         try
         {
-            byte[] current = await File.ReadAllBytesAsync(_document.FilePath);
-            if (_diskHash is null || !SHA256.HashData(current).AsSpan().SequenceEqual(_diskHash)) throw new IOException("This SILC changed on disk after you opened it. Reload before saving to avoid overwriting changes made by the game or another editor.");
-            _view.Apply(); string? backup = _document.Save(_backup.IsChecked == true);
+            async Task VerifyDiskUnchanged()
+            {
+                byte[] current = await File.ReadAllBytesAsync(_document.FilePath);
+                if (_diskHash is null || !SHA256.HashData(current).AsSpan().SequenceEqual(_diskHash)) throw new IOException("This SILC changed on disk after you opened it. Reload before saving to avoid overwriting changes made by the game or another editor.");
+            }
+            await VerifyDiskUnchanged();
+            _view.Apply();
+            var warnings = GameEditorGuidance.Collect(_document, _items.Where(i => i.Kind == "NPC").Select(i => i.Name));
+            bool makeBackup = _backup.IsChecked == true;
+            if (warnings.Count > 0)
+            {
+                if (!await ConfirmSaveWarnings(warnings, makeBackup)) { _status.Text = "Save cancelled. Your edits remain open; the file on disk is unchanged."; return false; }
+                // The game/another editor may have written the file while the warning was open.
+                await VerifyDiskUnchanged();
+            }
+            string? backup = _document.Save(makeBackup);
             _diskHash = SHA256.HashData(await File.ReadAllBytesAsync(_document.FilePath)); _dirty = false; UpdateHeader();
             _status.Text = backup is null ? "Saved and validated. Automatic backup is disabled." : "Saved and validated. Backup: " + backup; return true;
         }

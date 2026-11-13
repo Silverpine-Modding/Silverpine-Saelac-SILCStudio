@@ -1,4 +1,83 @@
-# 0.2.1 verification
+# 0.2.2 verification
+
+Verified on Windows x64 on 2026-11-13.
+
+## Multi-platform release build
+
+- Fresh self-contained single-file builds succeeded for **win-x64, win-arm64,
+  linux-x64, linux-arm64, osx-x64, and osx-arm64**, without build warnings or
+  errors. All six use the same 0.2.2 source, including the text-loss warning.
+- **1,248 full regression checks**, **149 fixture-only checks**, and **4 Python
+  sprite tests** passed. The 221 live SILCs and real save were only read; one
+  pre-existing missing-character reference remains unchanged.
+- The fresh Windows x64 executable passed a hidden startup test with synthetic
+  fixtures: version 0.2.2.0, responsive, Skia renderer loaded. Only that test
+  process was closed. The other five targets are cross-built, **not tested on
+  their native operating systems/architectures**. macOS is unsigned/unnotarized.
+- Dependency notices were collected for the six release targets. Packaging
+  verifies processor headers, archive integrity, executable SHA-256 hashes,
+  and Unix executable permissions. An explicit source-file allowlist excludes
+  settings, personal definitions/saves, test artifacts, and artwork caches.
+- The release includes six runnable archives, a separate source archive, and
+  `SHA256SUMS.txt`. Source and release notes describe the required native OS
+  libraries and optional Linux/macOS artwork-extraction Python environment.
+
+The following sections record the earlier local 0.2.2 iterations.
+
+## Warning wording update
+
+- The save warning explicitly states that saving the SILC through the unmodified
+  in-game editor WILL cut off over-limit text unless a limit-disabling mod is
+  installed and enabled. A highlighted reminder stays beside the acknowledgment
+  button, outside the scrolling warning list. Loading in-game is distinguished
+  from saving through the in-game editor.
+- **149 fixture-only checks** passed, including two new wording/presentation
+  assertions. The rendered dialog was visually inspected. No validation rules
+  or save behavior were changed in this wording-only update.
+- Windows x64 was rebuilt and the local executable replaced after verifying an
+  exact backup of the earlier 0.2.2 executable in `Previous versions`.
+
+Updated Windows x64 executable SHA-256:
+`CBF325782F29134427B0A60811581F2A4D1C5F80AC37BE8A6C2047C8F3FBA674`
+
+## Initial 0.2.2 verification
+
+- **147 fixture-only checks** and **1,246 full regression checks** passed.
+  The full run read 221 live definitions and one save without modifying them.
+  220 definitions passed existing game-style validation; the remaining warning
+  is the pre-existing NPC_Daniel reference to a missing Daniel character.
+- New checks cover advisory text/count/range boundaries, exact preservation of
+  over-limit lore/expressions/portrait values/waypoints, custom NPC references,
+  extra Important relationships, and the distinction between editor limits and
+  runtime summary selection.
+- `%NAME%` validation remains hard: public lore without a leading `%NAME%` is
+  rejected even when over the character limit. NPC description placeholder
+  validation also remains enforced. Existing required-field and safety checks
+  are not converted to advisory warnings.
+- Save tests verify explicit acceptance, safe Cancel/window-close behavior,
+  repeated confirmation, full-text saving, exact backups when enabled, no
+  backup/file changes on Cancel, and detection of external writes while the
+  warning is open. Normal within-limit saves do not show a bypass warning.
+- Headless rendered views of counters and the warning dialog were inspected.
+  Map/portrait/component and no-edit preservation regressions passed as well.
+- The save-map regression read 10,155 cells and 16,581 objects; artwork loading
+  found 90 prefab types, with two sprite-less utility markers unavailable. The
+  western house still has two tables and four chairs. The final run measured
+  371 ms for first render/PNG and 3 ms for cached drawing on this machine.
+- Windows x64 self-contained single-file publishing succeeded. NuGet's audit
+  was refreshed successfully after sandboxed network access was unavailable.
+  A hidden startup test outside the sandbox confirmed version 0.2.2.0, a
+  responsive window, and the loaded Skia renderer, using project-only fixtures.
+  Only the test-owned process was closed.
+- `publish/win-x64/SilverpineSilcEditor.exe` is updated; the exact previous
+  0.2.1 executable is retained in its `Previous versions` directory.
+  Other OS builds were not rebuilt in this update, and no GitHub release was
+  uploaded. The source remains the cross-platform Avalonia project.
+
+Windows x64 executable SHA-256:
+`A889CF0C9A2D3EC2AECE3C6B8A726B2B1E17FF8D9AAE68D10876A8BF6B2B020B`
+
+# Previous 0.2.1 verification
 
 ## Public multi-platform release, 2026-10-18
 

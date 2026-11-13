@@ -1,7 +1,32 @@
-# SILC Studio 0.2.1
+# SILC Studio 0.2.2
 
 Standalone native desktop SILC editor for Silverpine, created by Saelac and ChatGPT.
 This is an editor, not a port of the game, and does not require BepInEx.
+
+## New in 0.2.2
+
+- Live counters show the base game's character/count limits; numeric fields
+  show its adjustment ranges. Exceeded limits are highlighted, not silently
+  truncated or clamped. Guidance also appears in the embedded routine map.
+- Saving beyond these limits requires an explicit **I understand — save
+  anyway** confirmation every time. Cancel leaves the SILC and backups untouched.
+- **Text loss warning:** saving a character SILC through the unmodified
+  in-game editor **WILL cut off text that exceeds its character limits**. To
+  retain that text when saving in-game, a mod that disables the limits must be
+  installed and enabled. A highlighted reminder remains beside the save button.
+  SILC Studio saves the full text; simply loading in-game is not an editor save.
+- Unlimited Important relationships and unknown/future NPC relationship targets
+  remain allowed, with explicit compatibility warnings. Expression count/name
+  limits are advisory as well; image safety and dimension checks remain.
+- `%NAME%` validation is still enforced: public lore must start with `%NAME%`.
+  NPC description placeholder checks and other required-field checks remain.
+  Accepting a length/count warning does not bypass these requirements.
+- Lore exceeding 200 characters remains eligible for the game's retrieval.
+  Dialogue still selects up to three relevant entries, and condensed knowledge
+  uses only the first 16 entries containing `%NAME%` in their name or lore.
+  Editor bypasses do not remove the game's runtime selection/context limits.
+- The editor rechecks for external file changes after the save warning, so a
+  change made while you are deciding cannot be silently overwritten.
 
 ## Downloads
 
@@ -45,7 +70,6 @@ All ordinary SILC editing and coordinate-map functions work without Python.
   No time-of-day or dynamic lighting is simulated.
 - Game data and saves are read-only. Save changes explicitly in the main editor.
 
-After updating, reload game artwork once to populate the new renderer cache.
 Keep backups enabled and avoid simultaneous editing in the game.
 
 No personal definitions, saves, paths, settings, extracted world artwork,
@@ -54,3 +78,7 @@ from Silverpine and remain the property of the game's owners.
 
 The source archive is separate from the runnable downloads. SHA-256 checksums
 are supplied in `SHA256SUMS.txt`. See `VALIDATION.md` for test scope and limits.
+
+Verification: 1,248 full regression checks, 149 fixture-only checks, four
+Python sprite tests, and a Windows x64 packaged startup check passed. The
+other five targets were cross-built and still need native-system testing.

@@ -208,6 +208,7 @@ internal sealed class RoutineMapEditor : UserControl, IDisposable
         private readonly TextBox _x, _y;
         private TextBox? _pointX, _pointY;
         private ListBox? _waypoints;
+        private TextBlock? _waypointCounter;
         private int _manualX, _manualY;
         internal int SelectedWaypoint => _waypoints?.SelectedIndex ?? -1;
         internal RoutineDetails(RoutineDraft routine, EditState state, MapCanvas canvas, Action componentsChanged)
@@ -219,10 +220,10 @@ internal sealed class RoutineMapEditor : UserControl, IDisposable
             if (!record.Arguments.CanEdit) f.Note(record.Arguments.Error! + " Original components are preserved.");
             f.Panel.Children.Add(_patrolHost);
             var activity = new Fields(state); activity.Panel.Margin = new Thickness(12);
-            activity.Text("ID", record.Id, s => record.Id = s, help: "The Lua selector returns this ID. Changing it invalidates a Dynamic selector when applied.");
-            activity.Text("Pathing activity", record.PathingActivity, s => record.PathingActivity = s, true);
-            activity.Text("Activity", record.Activity, s => record.Activity = s, true);
-            activity.Text("Visible activity", record.VisibleActivity, s => record.VisibleActivity = s, true);
+            activity.Text("ID", record.Id, s => record.Id = s, help: "The Lua selector returns this ID. Changing it invalidates a Dynamic selector when applied.", gameLimit: GameEditorGuidance.RoutineId);
+            activity.Text("Pathing activity", record.PathingActivity, s => record.PathingActivity = s, true, gameLimit: GameEditorGuidance.Activity);
+            activity.Text("Activity", record.Activity, s => record.Activity = s, true, gameLimit: GameEditorGuidance.Activity);
+            activity.Text("Visible activity", record.VisibleActivity, s => record.VisibleActivity = s, true, gameLimit: GameEditorGuidance.VisibleActivity);
             var tabs = new TabControl(); tabs.Items.Add(new TabItem { Header = "Position", Content = Ui.Scroll(f.Panel) });
             tabs.Items.Add(new TabItem { Header = "Activity", Content = Ui.Scroll(activity.Panel) });
             tabs.Items.Add(new TabItem { Header = "Components", Content = RoutinesEditor.Components(record, state, componentsChanged, compact: true) });
@@ -233,12 +234,14 @@ internal sealed class RoutineMapEditor : UserControl, IDisposable
         internal void RefreshPatrol()
         {
             if (_patrolHost.Content is Control old) _state.Forget(old);
-            _routine.SyncPatrol(); _patrolHost.Content = null; _waypoints = null;
+            _routine.SyncPatrol(); _patrolHost.Content = null; _waypoints = null; _waypointCounter = null;
             if (_routine.Patrol is null) return;
             var f = new Fields(_state); f.Panel.Margin = new Thickness(0);
             f.Heading("Patrol waypoints", "Numbered lines show visit order, not obstacle-avoiding pathfinding.");
             if (_routine.PatrolError is { } error) { f.Note("Unreadable waypoints are preserved: " + error); _patrolHost.Content = f.Panel; return; }
             _waypoints = new ListBox { Height = 160 }; f.Panel.Children.Add(_waypoints);
+            _waypointCounter = Ui.Note(""); f.Panel.Children.Add(_waypointCounter);
+            f.Note("The base-game waypoint text field allows 100 characters for the complete [[x,y],…] list, not 100 points. Longer lists are allowed here (10,000-point safety limit).");
             _pointX = f.Int("Waypoint X", 0, n => _manualX = n); _pointY = f.Int("Waypoint Y", 0, n => _manualY = n);
             _waypoints.SelectionChanged += (_, _) => { if (SelectedWaypoint >= 0 && SelectedWaypoint < _routine.Points.Count) { Int2 p = _routine.Points[SelectedWaypoint]; _pointX.Text = p.X.ToString(CultureInfo.InvariantCulture); _pointY.Text = p.Y.ToString(CultureInfo.InvariantCulture); } _state.Changed(); };
             f.Panel.Children.Add(Ui.Row(Ui.Button("Add", () => AddPoint(new(_manualX, _manualY))), Ui.Button("Update", () => MovePoint(new(_manualX, _manualY))), Ui.Button("Remove", () => { int i = SelectedWaypoint; if (_routine.CanEditPatrol && i >= 0) { _routine.Points.RemoveAt(i); RefreshPoints(Math.Min(i, _routine.Points.Count - 1)); } })));
@@ -248,6 +251,12 @@ internal sealed class RoutineMapEditor : UserControl, IDisposable
         internal void AddPoint(Int2 point) { if (!_routine.CanEditPatrol || _routine.Points.Count >= 10000) return; _routine.Points.Add(point); RefreshPoints(_routine.Points.Count - 1); }
         internal void MovePoint(Int2 point) { if (!_routine.CanEditPatrol || SelectedWaypoint < 0) return; int i = SelectedWaypoint; _routine.Points[i] = point; RefreshPoints(i); }
         private void Reorder(int delta) { int i = SelectedWaypoint, j = i + delta; var points = _routine.Points; if (_routine.CanEditPatrol && i >= 0 && j >= 0 && j < points.Count) { (points[i], points[j]) = (points[j], points[i]); RefreshPoints(j); } }
-        private void RefreshPoints(int selected) { if (_waypoints is null) return; _waypoints.ItemsSource = _routine.Points.Select((p, i) => $"{i + 1}.    X {p.X}   Y {p.Y}").ToArray(); _waypoints.SelectedIndex = selected; _state.Changed(); }
+        private void RefreshPoints(int selected)
+        {
+            if (_waypoints is null) return;
+            _waypoints.ItemsSource = _routine.Points.Select((p, i) => $"{i + 1}.    X {p.X}   Y {p.Y}").ToArray(); _waypoints.SelectedIndex = selected;
+            if (_waypointCounter is not null) Fields.UpdateCounter(_waypointCounter, GameEditorGuidance.WaypointText(_routine.Points).Length, GameEditorGuidance.Waypoints, "serialized characters");
+            _state.Changed();
+        }
     }
 }

@@ -14,6 +14,7 @@ internal sealed class ImageEditor : UserControl, IDisposable
     private readonly ListBox _list = new();
     private readonly Image _preview = new() { Stretch = Stretch.Uniform, Margin = new Thickness(18) };
     private readonly TextBlock _info = Ui.Note("");
+    private readonly TextBlock _expressionCount = Ui.Note(""), _nameCount = Ui.Note("");
     private readonly CheckBox _combined = new() { Content = "Preview expression on portrait", IsChecked = true };
     private Bitmap? _bitmap;
     internal ImageEditor(PlayerDefinitionModel model, EditState state)
@@ -21,10 +22,14 @@ internal sealed class ImageEditor : UserControl, IDisposable
         _model = model; _state = state;
         _list.SelectionChanged += (_, _) => Preview(); _combined.IsCheckedChanged += (_, _) => Preview();
         var buttons = Ui.Row(Ui.AsyncButton("Replace PNG", Replace), Ui.AsyncButton("Export PNG", Export), Ui.AsyncButton("Add expression", AddExpression), Ui.AsyncButton("Rename", Rename), Ui.Button("Remove expression", Remove), Ui.AsyncButton("Add small nude", AddNude));
-        Content = Ui.Dock(buttons, Ui.Split(_list, Ui.Dock(Ui.Stack(_info, _combined), new Border { Background = Brush.Parse("#0C1216"), Child = _preview })), Ui.Note("PNG imports retain their original bytes. Expression previews replace the top strip of the portrait, just like the game.")); Refresh(model.Images.FirstOrDefault());
+        Content = Ui.Dock(Ui.Stack(buttons, _expressionCount), Ui.Split(_list, Ui.Dock(Ui.Stack(_info, _nameCount, _combined), new Border { Background = Brush.Parse("#0C1216"), Child = _preview })), Ui.Note("PNG imports retain their original bytes. Expression previews replace the top strip of the portrait, just like the game. Count/name limits are advisory; PNG safety and compatible expression dimensions remain required.")); Refresh(model.Images.FirstOrDefault());
     }
     private PlayerImageAsset? Selected => _list.SelectedItem as PlayerImageAsset;
-    private void Refresh(PlayerImageAsset? item) { _list.ItemsSource = null; _list.ItemsSource = _model.Images.ToArray(); _list.SelectedItem = item; }
+    private void Refresh(PlayerImageAsset? item)
+    {
+        _list.ItemsSource = null; _list.ItemsSource = _model.Images.ToArray(); _list.SelectedItem = item;
+        Fields.UpdateCounter(_expressionCount, _model.Images.Count(i => i.Category == PlayerImageCategory.Expression), GameEditorGuidance.Expressions, "expressions");
+    }
     internal static PixelSize PngSize(byte[] bytes)
     {
         if (bytes.Length < 24 || !bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 })) throw new InvalidDataException("Select a PNG image.");
@@ -54,7 +59,9 @@ internal sealed class ImageEditor : UserControl, IDisposable
     private void Preview()
     {
         _preview.Source = null; _bitmap?.Dispose(); _bitmap = null;
+        _info.Text = ""; _nameCount.IsVisible = Selected?.Category == PlayerImageCategory.Expression;
         if (Selected is not { } image) return;
+        if (_nameCount.IsVisible) Fields.UpdateCounter(_nameCount, image.Name.Length, GameEditorGuidance.Name, "name characters");
         try
         {
             PixelSize size = PngSize(image.Data); byte[]? portrait = _model.Images.FirstOrDefault(i => i.Category == PlayerImageCategory.Fixed && i.Name == "Dialog")?.Data;
@@ -84,17 +91,16 @@ internal sealed class ImageEditor : UserControl, IDisposable
     }
     private async Task AddExpression()
     {
-        if (_model.Images.Count(i => i.Category == PlayerImageCategory.Expression) >= 16) throw new InvalidDataException("The game editor allows up to 16 expressions.");
         if (await Import() is not { } bytes) return;
         ValidateExpression(bytes, _model.Images.Single(i => i.Category == PlayerImageCategory.Fixed && i.Name == "Dialog").Data);
-        string? name = await Ui.Prompt(Ui.CurrentWindow!, "Expression name"); if (string.IsNullOrWhiteSpace(name)) return;
+        string? name = await Ui.Prompt(Ui.CurrentWindow!, "Expression name", gameLimit: GameEditorGuidance.Name); if (string.IsNullOrWhiteSpace(name)) return;
         if (_model.Images.Any(i => i.Category == PlayerImageCategory.Expression && i.Name == name)) throw new InvalidDataException("An expression with that name already exists.");
         var item = new PlayerImageAsset(PlayerImageCategory.Expression, name, _model.Images.Count, bytes); _model.Images.Add(item); Refresh(item); _state.Changed();
     }
     private async Task Rename()
     {
         if (Selected is not { Category: PlayerImageCategory.Expression } image) return;
-        string? name = await Ui.Prompt(Ui.CurrentWindow!, "Expression name", image.Name); if (string.IsNullOrWhiteSpace(name) || name == image.Name) return;
+        string? name = await Ui.Prompt(Ui.CurrentWindow!, "Expression name", image.Name, GameEditorGuidance.Name); if (string.IsNullOrWhiteSpace(name) || name == image.Name) return;
         if (_model.Images.Any(i => i != image && i.Category == PlayerImageCategory.Expression && i.Name == name)) throw new InvalidDataException("An expression with that name already exists.");
         image.Name = name; Refresh(image); _state.Changed();
     }

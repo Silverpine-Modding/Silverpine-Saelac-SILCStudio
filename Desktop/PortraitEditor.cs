@@ -18,9 +18,9 @@ internal sealed class PortraitEditor : UserControl, IDisposable
         f.Heading("Portrait placement", "Drag the portrait to adjust its offset. The silhouette and guide lines come from the game's editor. Transparent PNG margins are included in positioning.");
         f.Choice("Preview", 0, ["In-game offset editor", "NPC dialogue (mirrored)"], n => { _canvas.Npc = n == 1; _canvas.InvalidateVisual(); }, markDirty: false);
         f.Choice("Game aspect ratio", 0, ["16:9", "16:10", "21:9", "4:3"], n => { _canvas.Aspect = new[] { 16f / 9, 16f / 10, 21f / 9, 4f / 3 }[n]; _canvas.InvalidateVisual(); }, markDirty: false);
-        TextBox x = f.Float("Offset X", model.OffsetX, n => { model.OffsetX = n; _canvas.InvalidateVisual(); });
-        TextBox y = f.Float("Offset Y", model.OffsetY, n => { model.OffsetY = n; _canvas.InvalidateVisual(); });
-        TextBox scale = f.Float("Scale", model.Scale, n => { model.Scale = n; _canvas.InvalidateVisual(); });
+        TextBox x = f.Float("Offset X", model.OffsetX, n => { model.OffsetX = n; _canvas.InvalidateVisual(); }, gameMin: -100, gameMax: 300);
+        TextBox y = f.Float("Offset Y", model.OffsetY, n => { model.OffsetY = n; _canvas.InvalidateVisual(); }, gameMin: -300, gameMax: 300);
+        TextBox scale = f.Float("Scale", model.Scale, n => { model.Scale = n; _canvas.InvalidateVisual(); }, gameMin: .9m, gameMax: 1.6m);
         void Set(float a, float b, float c) { x.Text = a.ToString("R", CultureInfo.InvariantCulture); y.Text = b.ToString("R", CultureInfo.InvariantCulture); scale.Text = c.ToString("R", CultureInfo.InvariantCulture); }
         _canvas.MoveOffset = (a, b) => Set(a, b, model.Scale);
         _canvas.ChangeScale = delta => Set(model.OffsetX, model.OffsetY, Math.Max(.01f, model.Scale + delta));

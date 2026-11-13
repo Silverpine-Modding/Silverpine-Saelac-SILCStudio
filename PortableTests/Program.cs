@@ -10,7 +10,7 @@ using SilverpineSilcEditor.Desktop;
 using System.Diagnostics;
 using System.Security.Cryptography;
 
-internal static class Program
+internal static partial class Program
 {
     private static int _checks;
     [STAThread]
@@ -48,6 +48,7 @@ internal static class Program
             RenderDefinition(playerFile, npcs, players, output, "player"); RenderDefinition(npcFile, npcs, players, output, "npc");
             TestMainWindow(npcFile, output); TestMapDraft(output); TestMapLayers(output);
             TestComponents(output); TestRacials(playerFile, npcs, players); TestPortraitPreview(playerFile); TestWaypoints(); TestImageComposite(output); TestSafeSave(playerFile, output);
+            TestGuidance(output);
             ExpectThrows(() => DefinitionView.ValidateModelJson("[]"), "Model must be an object"); ExpectThrows(() => DefinitionView.ValidateModelJson("{}"), "Model must not be empty"); DefinitionView.ValidateModelJson("{\"test\":1}");
             if (args.Length > 2)
             {
@@ -255,7 +256,7 @@ internal static class Program
         var set = RoutineArgumentSet.Parse(RoutineArgumentSet.EmptyBytes()); var lights = set.Add("RoutineArgument_TurnOnLights"); lights.Storage!.SetInt("targetTurns", 121);
         var state = new EditState(() => { }); Control panel = RoutinesEditor.ComponentFields(lights, state); var w = TestWindow(panel); w.Show(); Dispatcher.UIThread.RunJobs();
         var text = panel.GetLogicalDescendants().OfType<TextBox>().First(t => t.Text == "60.5"); text.Text = "45"; Dispatcher.UIThread.RunJobs(); state.Validate(); Check(lights.Storage.GetInt("targetTurns") == 90, "Light minutes convert to turns");
-        text.Text = "-1"; Dispatcher.UIThread.RunJobs(); ExpectThrows(state.Validate, "Negative duration rejected"); text.Text = "60.5"; Dispatcher.UIThread.RunJobs(); state.Validate();
+        text.Text = "-1"; Dispatcher.UIThread.RunJobs(); state.Validate(); Check(lights.Storage.GetInt("targetTurns") == -2 && panel.GetLogicalDescendants().OfType<TextBlock>().Any(t => t.Text?.Contains("outside range (allowed)") == true), "Negative duration is preserved with an advisory warning"); text.Text = "60.5"; Dispatcher.UIThread.RunJobs(); state.Validate();
         Check(lights.Storage.GetInt("targetTurns") == 121, "Odd light turn counts preserved"); Render(w, Path.Combine(output, "component-lighting.png")); w.Close();
         var face = set.Add("RoutineArgument_FaceDirection"); face.Storage!.SetInt("direction", 3); panel = RoutinesEditor.ComponentFields(face, state); w = TestWindow(panel); w.Show(); Dispatcher.UIThread.RunJobs();
         Check(panel.GetLogicalDescendants().OfType<ComboBox>().First().SelectedItem!.ToString() == "Right", "Named facing direction"); w.Close();

@@ -1,4 +1,4 @@
-# Silverpine SILC Studio · 0.2.1
+# Silverpine SILC Studio · 0.2.2
 
 A native desktop editor for Silverpine SILCs, built with Avalonia and .NET 10.
 The **main project is now cross-platform**, with no WinForms dependency.
@@ -63,6 +63,65 @@ condensed-knowledge cache. Knowledge changes, private-description edits, and
 routine ID changes invalidate a dynamic NPC's generated selector according to
 the game's editor rules. Regeneration happens when the game's model-based cache
 processing runs, not necessarily immediately at boot.
+
+## Base-game guidance and intentional bypasses
+
+The editor shows live character/count counters and numeric-range hints from
+Silverpine 1.7.3's in-game editors. These are **advisory**, not hard caps:
+exceeding a limit turns its counter amber without trimming text or clamping
+numbers. Existing out-of-range data remains intact.
+
+| Field | Base-game editor guidance |
+| --- | --- |
+| Character/NPC names, character definition, species, occupation, relationship names/roles, expression names | 25 characters |
+| Character/public NPC description | 400 characters |
+| Private NPC description | 600 characters |
+| Personality traits | 150 characters |
+| Knowledge name / lore | 30 / 200 characters |
+| Routine ID / visible activity | 25 characters |
+| Routine activity / pathing activity | 50 characters |
+| Patrol waypoint list | 100 characters in compact `[[x,y],…]` form, not 100 points |
+| Important relationships | 2 for non-override NPCs; bypass allowed |
+| Facial expressions | 16; bypass allowed |
+| Portrait offset X / Y / scale | −100…300 / −300…300 / 0.9…1.6 |
+| Known player for days | Whole numbers 0…99,999 |
+| Lighting minutes / patrol wait turns | Whole numbers 0…999 |
+| Random Walk / Random Path interval | Whole numbers 0…9 / 0…99 |
+| Character sex selection | One in the game editor; multiple supported here |
+
+Saving with exceeded limits, game-incompatible formatting/choices, extra
+Important relationships, or unknown NPC targets displays the specific warnings
+and requires **I understand — save anyway** on every save. Closing the warning
+or choosing Cancel does not write the SILC or create a backup, and keeps the
+draft open. The warning states whether automatic backup is enabled. If enabled,
+accepting the warning still makes an exact backup before writing. The editor
+rechecks for external file changes after the warning is accepted.
+
+These bypasses are not a promise of game compatibility. Values may be ignored,
+altered by the in-game editor, or cause game/AI issues. Unknown NPC relationships
+remain allowed, but may be ignored until an NPC with the matching name exists.
+**Text loss warning:** saving a character SILC through the unmodified in-game
+editor **will cut off text exceeding its character limits**. To retain that
+text when saving in-game, a mod that disables those limits must be installed and
+enabled. SILC Studio saves the complete text; simply loading a SILC in-game is
+not the same as saving it through the game's editor. This warning appears in
+the save confirmation and remains highlighted beside its acknowledgment button.
+Required fields, valid numeric storage, JSON, PNG dimensions, and safety checks
+still apply. Unrecognized advanced fields have no invented base-game cap.
+The `%NAME%` rule is still enforced: public lore must **start** with `%NAME%`,
+and NPC descriptions must contain `%NAME%`, `%SEX%`, and `%SPECIES%` under the
+base-game validation rules. Accepting a length/count warning does not bypass
+these requirements. Private lore is not forced to start with `%NAME%` by the
+base-game editor; the summary's separate `%NAME%` selection rule still applies.
+
+**Lore:** the game's lore reader does not truncate knowledge at 200 characters.
+Longer entries remain eligible for retrieval; dialogue selects up to three
+relevant entries from the current NPC. The condensed summary uses only the
+first 16 entries whose name or lore contains `%NAME%`. A generated routine
+selector likewise receives only the first 16 named routines. Those are runtime
+selection rules, not editor limits that this program can bypass. Large entries
+also consume more model context. This behavior was checked against the local
+Silverpine 1.7.3 game code, not by assuming every saved entry reaches every prompt.
 
 ## Routine map
 

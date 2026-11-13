@@ -15,10 +15,10 @@ internal sealed class RoutinesEditor : UserControl
         Content = new RecordEditor<RoutineRecord>(parsed.Items, r => r.Id, () => { invalidateScript(); return RoutineRecord.Create(); }, routine =>
         {
             var f = new Fields(state); f.Heading("Routine", "Choose where the NPC goes, what they are doing, and what happens after they arrive.");
-            f.Text("ID", routine.Id, s => { routine.Id = s; invalidateScript(); }, help: "The Lua routine selector returns this ID. Renaming it clears generated selectors in Dynamic mode.");
-            f.Text("Pathing activity", routine.PathingActivity, s => routine.PathingActivity = s, help: "What the NPC is doing while travelling to the destination.");
-            f.Text("Activity", routine.Activity, s => routine.Activity = s, help: "What the NPC does after arriving.");
-            f.Text("Visible activity", routine.VisibleActivity, s => routine.VisibleActivity = s, help: "The activity description visible to the player.");
+            f.Text("ID", routine.Id, s => { routine.Id = s; invalidateScript(); }, help: "The Lua routine selector returns this ID. Renaming it clears generated selectors in Dynamic mode. The game's generated selector considers only the first 16 named routines.", gameLimit: GameEditorGuidance.RoutineId);
+            f.Text("Pathing activity", routine.PathingActivity, s => routine.PathingActivity = s, help: "What the NPC is doing while travelling to the destination.", gameLimit: GameEditorGuidance.Activity);
+            f.Text("Activity", routine.Activity, s => routine.Activity = s, help: "What the NPC does after arriving.", gameLimit: GameEditorGuidance.Activity);
+            f.Text("Visible activity", routine.VisibleActivity, s => routine.VisibleActivity = s, help: "The activity description visible to the player.", gameLimit: GameEditorGuidance.VisibleActivity);
             TextBox x = f.Int("Destination X", routine.TargetX, n => routine.TargetX = n), y = f.Int("Destination Y", routine.TargetY, n => routine.TargetY = n);
             var components = new ContentControl();
             f.Panel.Children.Add(Ui.AsyncButton("Edit on map…", async () =>
@@ -77,9 +77,12 @@ internal sealed class RoutinesEditor : UserControl
                 string label = RoutinePresentation.FieldName(key), help = RoutinePresentation.FieldHelp(key);
                 if (key == "direction") f.Choice(label, storage.GetInt(key), ["Up", "Down", "Left", "Right"], n => storage.SetInt(key, n), help);
                 else if (key == "targetTurns")
-                    f.Number("Minutes", (storage.GetInt(key) / 2m).ToString(CultureInfo.InvariantCulture), text => { if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal minutes) || minutes < 0 || minutes > int.MaxValue / 2m || minutes * 2 != decimal.Truncate(minutes * 2)) return false; storage.SetInt(key, (int)(minutes * 2)); return true; }, help + " Half-minute values preserve odd turn counts.");
+                {
+                    var minutesBox = f.Number("Minutes", (storage.GetInt(key) / 2m).ToString(CultureInfo.InvariantCulture), text => { if (!decimal.TryParse(text, NumberStyles.Number, CultureInfo.InvariantCulture, out decimal minutes) || minutes < int.MinValue / 2m || minutes > int.MaxValue / 2m || minutes * 2 != decimal.Truncate(minutes * 2)) return false; storage.SetInt(key, (int)(minutes * 2)); return true; }, help + " Half-minute values preserve odd turn counts.");
+                    f.RangeNotice(minutesBox, 0, 999);
+                }
                 else if (storage.Find(key)?.Kind == VssValueKind.Bool) f.Check(label, storage.GetBool(key), b => storage.SetBool(key, b), help);
-                else f.Number(label, storage.GetInt(key).ToString(CultureInfo.InvariantCulture), text => { if (!int.TryParse(text, out int n) || n < 0) return false; storage.SetInt(key, n); return true; }, help);
+                else f.Int(label, storage.GetInt(key), n => storage.SetInt(key, n), help, gameMin: 0, gameMax: key == "interval" ? 9 : key == "randomPathInterval" ? 99 : 999);
             }
             if (argument.TypeName == "RoutineArgument_Patrol") f.Note("Edit waypoints in the map's Position tab. Outside the map, use ‘Edit on map’ on Destination & activity to get there. Manual coordinates work without loading a save.");
             var tabs = new TabControl(); tabs.Items.Add(new TabItem { Header = "Behavior", Content = Ui.Scroll(f.Panel) });

@@ -6,7 +6,7 @@
     <Nullable>enable</Nullable>
     <AssemblyName>SilverpineSilcEditor</AssemblyName>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <Version>0.2.1</Version>
+    <Version>0.2.2</Version>
     <PublishTrimmed>false</PublishTrimmed>
     <IncludeNativeLibrariesForSelfExtract>true</IncludeNativeLibrariesForSelfExtract>
     <AvaloniaUseCompiledBindingsByDefault>false</AvaloniaUseCompiledBindingsByDefault>
